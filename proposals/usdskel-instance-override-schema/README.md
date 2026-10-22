@@ -16,41 +16,50 @@ This is phase 2 of the larger [deferred skinning](https://wiki.pixar.com/pages/v
 
 We propose creating a new single-application API schema `SkelInstancedAnimationSourcesAPI` (see the [Risks/Concerns](#risks/concerns/todos) section for rationales behind the design choice) for PointInstancer to supply instance-varying attributes and a relationship to drive animation binding and time offsets. This enables a compact definition where a single PointInstancer manages thousands (or orders of magnitude more) of skeletal instances, each with unique animation states, as demonstrated below:
 
-`def Scope "World"`  
-`{`  
-`def PointInstancer "HumanFemaleCrowd" (`  
-    `append apiSchemas = ["SkelInstancedAnimationSourcesAPI"]`  
-`)`  
-`{`  
-    `# Bind unique animation sources per instance`  
-    `rel skel:animationSources = [`  
-            `</World/Anim/Walk_1>, </World/Anim/Walk_2>, </World/Anim/KA>`  
-    `]`  
-    `# Per-instance index into skel:animationSources relationship`  
-    `# Similar to how protoIndices index into prototypes.`  
-    `int[] skel:animationSourceIndices = [0, 1, 2]`  
-   
-    `# Apply per-instance time offsets`  
-    `duration[] skel:animationOffsets = [0, 5, 0]`  
-       
-    `# Standard PointInstancer attributes`  
-    `point3f[] positions = [(0, 0, 0), (50, 0, 0), (100, 0, 0)]`  
-    `int[] protoIndices = [0, 0, 0]`  
-   
-    `rel prototypes = [`  
-        `</World/HumanFemaleCrowd/Prototypes/HumanFemale>,`  
-    `]`  
-   
-    `over "Prototypes"`  
-    `{`  
-        `def "HumanFemale" (`  
-            `prepend references = @./HumanFemale.usda@`  
-        `)`  
-        `{`  
-        `}`  
-    `}`  
-`}`  
-`}`
+```usda
+def Scope "World"
+{
+    def PointInstancer "HumanFemaleCrowd" (
+        append apiSchemas = ["SkelInstancedAnimationSourcesAPI"]
+    )
+    {
+        # Bind unique animation sources per instance
+        rel skel:animationSources = [
+            </World/Anim/Walk_1>,
+            </World/Anim/Walk_2>,
+            </World/Anim/KA>
+        ]
+
+        # Per-instance index into skel:animationSources relationship
+        # Similar to how protoIndices index into prototypes.
+        int[] skel:animationSourceIndices = [0, 1, 2]
+
+        # Apply per-instance time offsets
+        duration[] skel:animationOffsets = [0, 5, 0]
+
+        # Standard PointInstancer attributes
+        point3f[] positions = [
+            (0, 0, 0),
+            (50, 0, 0),
+            (100, 0, 0)
+        ]
+        int[] protoIndices = [0, 0, 0]
+
+        rel prototypes = [
+            </World/HumanFemaleCrowd/Prototypes/HumanFemale>
+        ]
+
+        over "Prototypes"
+        {
+            def "HumanFemale" (
+                prepend references = @./HumanFemale.usda@
+            )
+            {
+            }
+        }
+    }
+}
+```
 
 Note that skel:animationOffsets has a new `duration` SdfValueType.  
 Such values need to be mapped during value resolution to pick up time-scaling due to authored SdfLayerOffsets and timecodesPerSecond scaling, but encoding them as timecode valued is incorrect because skel:animationOffsets must be insensitive to any offsets (i.e. the translation component) specified in SdfLayerOffsets, i.e. they must only be affected by the scaling component. More details in the internal jira ticket here: [USD-12021 \- Time duration value type needed New](https://jira.pixar.com/browse/USD-12021)
